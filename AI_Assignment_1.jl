@@ -102,4 +102,23 @@ x_test= x_matrix[train_index+1:end,:]
 y_train=y[1:train_index]
 y_test=y[train_index+1:end]
 
+function min_max_scaling(x)
+
+x_norm = (x .- extrema(x)[1]) ./ extrema(x)[2] .- extrema(x)[1]
+
+x_mean = mean(x, dims=1)
+x_standard_deviation = std(x,dims=1)
+
+return (x_norm, x_mean, x_standard_deviation)
+end
+
+function zScore_feature_standardization(x)
+x_mean = mean(x, dims=1)
+x_standard_deviation = std(x,dims=1)
+
+z = (x-x_mean)/ x_standard_deviation
+return (x_mean, x_standard_deviation,z)
+end
+
 ###############################################END OF DATA preparation############################################
+F
