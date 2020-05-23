@@ -2,42 +2,37 @@
 using CSV
 using DataFrames
 using Statistics
-
+using Plots
 
 
 data= CSV.read("/Users/adrianosilva/Downloads/bank-additional-full.csv")
 df= DataFrame(data)
-
-#Our Data preparation steps involved the following:
-#Y was converted to binary 0s and 1s, using a loop.
-#Apart from the selected attributes, extra dummy attributes were created because to use the one-hot encoding technique
-#
-#From the original dataset selected attributes were:
-#AGE,
-#Education,
-#loan,
-#housing,
-#campain,
-#poutcome,
-#emp.var.rate
-#cons.price.idx
-#cons.conf.idx
-
-#nr.employed
-#
-# One-hot encoding was performed on Education, housing, loan, and poutcome
-
+"""
+Our Data preparation steps involved the following:
+Y was converted to binary 0s and 1s, using a loop.
+Apart from the selected attributes, extra dummy attributes were created because to use the one-hot encoding technique
+From the original dataset selected attributes were:
+AGE,
+Education,
+loan,
+housing,
+campain,
+poutcome,
+emp.var.rate
+cons.price.idx
+cons.conf.idx
+nr.employed
+One-hot encoding was performed on Education, housing, loan, and poutcome
+"""
 i = 1
 y=zeros(Int,41188)
-#The dummy variables where created in order to
-#implement one-hot encoding
-#=
+"""
+The dummy variables where created in order to
+implement one-hot encoding
 To be able to binarize all the categorical attributes,
 firstly attributes containing only zeros were created
 then using a loop ones where added where applicable.
-=#
-
-
+"""
 #############Education Dummy variables##################################
 dummy_basic=zeros(Int,41188) #The basics attributes variables will all be represented by a single variables named basic.
 dummy_high_school=zeros(Int,41188)
@@ -103,23 +98,161 @@ x_test= x_matrix[train_index+1:end,:]
 y_train=y[1:train_index]
 y_test=y[train_index+1:end]
 
+##########Features normalization and scaling###########################
+
+"""
+This functions normalizes using min_max scaling method
+"""
 function min_max_scaling(x)
-
 x_norm = (x .- extrema(x)[1]) ./ extrema(x)[2] .- extrema(x)[1]
-
 x_mean = mean(x, dims=1)
-x_standard_deviation = std(x,dims=1)
-
-return (x_norm, x_mean, x_standard_deviation)
+x_std = std(x,dims=1)
+return (x_norm, x_mean, x_std)
 end
 
+function test_scale(x,x_mean,x_std)
+x_norm = (x .- x_mean) ./ x_std
+return (x_norm)
+end
+"""
+This functions normalizes features using Z scoring standardization
+"""
 function zScore_feature_standardization(x)
 x_mean = mean(x, dims=1)
-x_standard_deviation = std(x,dims=1)
-
-z = (x-x_mean)/ x_standard_deviation
-return (x_mean, x_standard_deviation,z)
+x_std = std(x, dims=1)
+x_norm = (x .- x_mean) ./ x_std
+return (x_norm, x_mean, x_std);
 end
 
+"""
+Assign normalized features to the variables
+"""
+norm_x_train, x_mean, x_std = zScore_feature_standardization(x_train)
+norm_x_test = test_scale(x_test,x_mean,x_std)
 ###############################################END OF DATA preparation############################################
-F
+
+"""
+The sigmoid function
+"""
+function logistic(s)
+return 1 ./ (1 .+ exp.(.-s))
+end
+
+
+"""
+Cost function
+"""
+function loss_function(x, y, theta, lambda)
+m = length(y)
+h = logistic(x * theta)
+l1_norm = (lambda/(2*m) * abs(sum(theta[2 : end])))
+cost_Vector = (1/m) * ( ((-y)' * log.(h)) - ((1 .- y)' * log.(1 .- h))) + l1_norm
+gd = (1/m) * (x') * (h-y) + ((1/m) * (lambda * theta))
+gd[1] = (1/m) * (x[:, 1])' * (h-y)
+return (cost_Vector, gd)
+
+end
+
+
+
+function lmodel(x, y, lambda, fit_intercept=true, η=0.01, max_iter=1000)
+# Initialize some useful values
+m = length(y); # number of training examples
+
+# Add a constant of 1s if fit_intercept is specified
+constant = ones(m, 1)
+x = hcat(constant, x)
+
+# Use the number of features to initialise the theta θ vector
+n = size(x)[2]
+theta = zeros(n)
+"""
+ Initialise the cost vector
+"""
+cost_vector = zeros(max_iter)
+for iter in range(1, stop=max_iter)
+
+"""
+Calcaluate the cost and gradient during iteration
+"""
+cost_vector[iter], gd = loss_function(x, y, theta, lambda)
+"""
+Update theta using gradients  for direction and (η) for the magnitude of steps in that direction
+"""
+theta = theta - (η * gd)
+end
+return (theta, cost_vector)
+end
+
+"""
+Use gradient descent to search for the optimal values
+"""
+theta, 𝐉 = lmodel(norm_x_train, y_train, 0.0001, true, 0.3, 3000);
+plot(𝐉, color="red", title="Cost ", legend=false,
+     xlabel="iterations", ylabel="Cost")
+plot(y_train,norm_x_train, seriestype = :scatter, title = "My Scatter Plot");
+
+"""
+"""
+function predictor(x, theta, fit_intercept=true)
+m = size(x)[1]
+if fit_intercept
+# Add a constant of 1s if fit_intercept is specified
+constant = ones(m, 1)
+x = hcat(constant, x)
+else
+x
+end
+h = logistic(x * theta)
+return h
+end
+
+
+ """
+This function applies threshold to the probabilities
+ """
+function prediction_threshold(proba, threshold=0.5)
+return proba .>= threshold
+end
+"""
+Predict values and assign to a variable
+"""
+predicted_values = prediction_threshold(predictor(norm_x_test, theta))
+TP=0
+TN=0
+FP=0
+FN=0
+"""
+Captures True positives, True negatives, False positive and False negative
+"""
+for i in 1:8238
+if predicted_values[i]==1 && y_test[i]== 1
+global TP+=1
+elseif  predicted_values[i]==0 && y_test[i]== 0
+global TN+=1
+elseif predicted_values[i]==1 && y_test[i]==0
+    global FP+=1
+elseif predicted_values[i]==0 && y_test[i]==1
+    global FN+=1
+end
+end
+
+
+print("True Positives =",TP)
+print("True Negatives =",TN)
+print("False Positives =",FP)
+print("False Positives =",FN)
+
+"""
+CALCULATE PERFORMANCE METRIC
+"""
+accuracy= (TP + TN) ./ 8238
+precision= TP ./ TP + FP
+recall=     TP ./ TP + FN
+
+"""
+PRINT PERFORMANCE METRIC
+"""
+print("ACCURACY = ",accuracy)
+print("PRECISION = ",precision)
+print("RECALL = ",recall)
