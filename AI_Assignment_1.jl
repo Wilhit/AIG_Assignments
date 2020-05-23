@@ -155,15 +155,14 @@ end
 
 
 
-function lmodel(x, y, lambda, fit_intercept=true, η=0.01, max_iter=1000)
+function lmodel(x, y, lambda,η=0.01, max_iter=1000)
 # Initialize some useful values
 m = length(y); # number of training examples
 
 # Add a constant of 1s if fit_intercept is specified
 constant = ones(m, 1)
 x = hcat(constant, x)
-
-# Use the number of features to initialise the theta θ vector
+# Use the number of features to initialise the theta
 n = size(x)[2]
 theta = zeros(n)
 """
@@ -187,10 +186,10 @@ end
 """
 Use gradient descent to search for the optimal values
 """
-theta, 𝐉 = lmodel(norm_x_train, y_train, 0.0001, true, 0.3, 3000);
+theta, 𝐉 = lmodel(norm_x_train, y_train, 0.0001,0.3, 3000);
 plot(𝐉, color="red", title="Cost ", legend=false,
      xlabel="iterations", ylabel="Cost")
-plot(y_train,norm_x_train, seriestype = :scatter, title = "My Scatter Plot");
+plot(norm_x_train, y_train, seriestype = :scatter, title = "Scatter Plot");
 
 """
 """
@@ -211,8 +210,8 @@ end
  """
 This function applies threshold to the probabilities
  """
-function prediction_threshold(proba, threshold=0.5)
-return proba .>= threshold
+function prediction_threshold(probabilities, threshold=0.5)
+return probabilities .>= threshold
 end
 """
 Predict values and assign to a variable
@@ -222,9 +221,7 @@ TP=0
 TN=0
 FP=0
 FN=0
-"""
-Captures True positives, True negatives, False positive and False negative
-"""
+
 for i in 1:8238
 if predicted_values[i]==1 && y_test[i]== 1
 global TP+=1
@@ -237,22 +234,14 @@ elseif predicted_values[i]==0 && y_test[i]==1
 end
 end
 
-
 print("True Positives =",TP)
 print("True Negatives =",TN)
 print("False Positives =",FP)
 print("False Positives =",FN)
+#CALCULATE PERFORMANCE METRIC
 
-"""
-CALCULATE PERFORMANCE METRIC
-"""
 accuracy= (TP + TN) ./ 8238
 precision= TP ./ TP + FP
 recall=     TP ./ TP + FN
-
-"""
-PRINT PERFORMANCE METRIC
-"""
-print("ACCURACY = ",accuracy)
-print("PRECISION = ",precision)
-print("RECALL = ",recall)
+#PERFORMANCE METRICS
+pmetrics = DataFrame(ACCURACY = accuracy, PRECISION = precision, RECALL = recall)
