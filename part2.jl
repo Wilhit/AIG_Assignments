@@ -11,7 +11,7 @@ function getBest(max_branch,alpha, beta)
     return best
 end
 
-function aws(max_branch,alpha, beta)
+function alternate(max_branch,alpha, beta)
     best = beta
     for i in 1:2
         val = find_solution(max_branch - 1,i,alpha,beta,true,components)
@@ -34,7 +34,7 @@ function find_solution(max_branch, index,alpha,beta,condition,components)
 		return best
 		
     else
-        best = aws(max_branch,alpha,beta)
+        best = alternate(max_branch,alpha,beta)
 		return best
     end
 end
