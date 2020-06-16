@@ -61,7 +61,7 @@ maximum = parse(Int64, readline())
 print("ENTER BETA VALUE", " :")
 minimim = parse(Int64, readline())
 
-print("ENTER MAX NO BRANKES", " :")
+print("ENTER MAX NO BRANCHES", " :")
 max_branch = parse(Int64, readline())
 
 print("ENTER MAX NO  of PLAYERS", " :")
